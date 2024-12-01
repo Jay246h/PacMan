@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 moveDirection = Vector2.right;
     private float rayDistance = 0.55f;
+    private Direction direction = Direction.Right;
 
     private Movement2D movement;
 
@@ -24,18 +25,22 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             moveDirection = Vector2.up;
+            direction = Direction.Up;
         }
         if (Input.GetKeyDown(KeyCode.DownArrow))
         {
             moveDirection = Vector2.down;
+            direction = Direction.Down;
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
             moveDirection = Vector2.left;
+            direction = Direction.Left;
         }
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             moveDirection = Vector2.right;
+            direction = Direction.Right;
         }
 
         // 2. 이동방향에 광선 발사 (장애물 검사)
@@ -44,7 +49,13 @@ public class PlayerController : MonoBehaviour
         if(hit.transform == null)
         {
             // MoveTo() 메소드에 이동방향을 매개변수로 전달해 이동
-            movement.MoveTo(moveDirection);
+            bool movePossible = movement.MoveTo(moveDirection);
+            // 이동을 수행하기 되면
+            if(movePossible)
+            {
+                // 오브젝트 회전 시킴 (애니메이션을 처리해도 됨)
+                transform.localEulerAngles = Vector3.forward * 90 * (int)direction;
+            }
         }
     }
 }
