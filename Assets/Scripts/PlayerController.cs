@@ -4,11 +4,17 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField]
+    private LayerMask tileLayer;
+
     private Vector2 moveDirection = Vector2.right;
+    private float rayDistance = 0.55f;
+
     private Movement2D movement;
 
     private void Awake()
     {
+        //tileLayer = 1 << LayerMask.NameToLayer("Tile"); // 코드를 이용할 때
         movement = GetComponent<Movement2D>();
     }
 
@@ -32,10 +38,13 @@ public class PlayerController : MonoBehaviour
             moveDirection = Vector2.right;
         }
 
-        //if (Input.anyKeyDown)
-        //{
-        //    // MoveTo() 메소드에 이동방향을 매개변수로 전달해 이동
-        //    movement.MoveTo(moveDirection);
-        //}
+        // 2. 이동방향에 광선 발사 (장애물 검사)
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, moveDirection, rayDistance, tileLayer);
+        // 2-1. 장애물이 없으면 이동
+        if(hit.transform == null)
+        {
+            // MoveTo() 메소드에 이동방향을 매개변수로 전달해 이동
+            movement.MoveTo(moveDirection);
+        }
     }
 }
