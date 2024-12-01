@@ -12,11 +12,13 @@ public class PlayerController : MonoBehaviour
     private Direction direction = Direction.Right;
 
     private Movement2D movement;
+    private AroundWrap aroundWrap;
 
     private void Awake()
     {
         //tileLayer = 1 << LayerMask.NameToLayer("Tile"); // 코드를 이용할 때
         movement = GetComponent<Movement2D>();
+        aroundWrap = GetComponent<AroundWrap>();
     }
 
     private void Update()
@@ -56,6 +58,9 @@ public class PlayerController : MonoBehaviour
                 // 오브젝트 회전 시킴 (애니메이션을 처리해도 됨)
                 transform.localEulerAngles = Vector3.forward * 90 * (int)direction;
             }
-        }
+
+            // 화변 밖으로 나가면 반대편에서 등장
+            aroundWrap.UpdateAroundWrap();
+        }   
     }
 }
