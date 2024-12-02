@@ -47,4 +47,6 @@ public class FadeEffect : MonoBehaviour
             yield return null;
         }
     }
+
+   
 }

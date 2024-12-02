@@ -63,4 +63,12 @@ public class PlayerController : MonoBehaviour
             aroundWrap.UpdateAroundWrap();
         }   
     }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Item"))
+        {
+            Destroy(collision.gameObject);
+        }
+    }
 }
