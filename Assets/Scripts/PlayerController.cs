@@ -13,12 +13,14 @@ public class PlayerController : MonoBehaviour
 
     private Movement2D movement;
     private AroundWrap aroundWrap;
+    private SpriteRenderer spriteRenderer;
 
     private void Awake()
     {
         //tileLayer = 1 << LayerMask.NameToLayer("Tile"); // 코드를 이용할 때
         movement = GetComponent<Movement2D>();
         aroundWrap = GetComponent<AroundWrap>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
     private void Update()
@@ -70,5 +72,22 @@ public class PlayerController : MonoBehaviour
         {
             Destroy(collision.gameObject);
         }
+
+        else if (collision.CompareTag("Enemy"))
+        {
+            StopCoroutine(nameof(OnHit));
+            StartCoroutine(nameof(OnHit));
+
+            Destroy(collision.gameObject);
+        }
+    }
+
+    private IEnumerator OnHit()
+    {
+        spriteRenderer.color = Color.red;
+
+        yield return new WaitForSeconds(0.5f);
+
+        spriteRenderer.color = Color.white;
     }
 }
