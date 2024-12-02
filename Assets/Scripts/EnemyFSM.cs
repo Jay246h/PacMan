@@ -4,14 +4,20 @@ using UnityEngine;
 
 public class EnemyFSM : MonoBehaviour
 {
+    [SerializeField]
+    private LayerMask tileLayer;
+
     private Vector2 moveDirection = Vector2.right;
     private Direction direction = Direction.Right;
+    private float rayDistance = 0.55f;
 
     private Movement2D movement2D;
+    private AroundWrap aroundWrap;
 
     private void Awake()
     {
         movement2D = GetComponent<Movement2D>();
+        aroundWrap = GetComponent<AroundWrap>();
 
         // 이동방향을 임의로 설정
         SetMoveDirectionByRandom();
@@ -19,8 +25,21 @@ public class EnemyFSM : MonoBehaviour
 
     private void Update()
     {
-        // MoveTo() 매소드에 이동 방향을 매개변수로 전달해 이동
-        movement2D.MoveTo(moveDirection);
+        // 2. 이동 방향에 광선 발사 (장애물 검사)
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, moveDirection, rayDistance, tileLayer);
+        // 2-1. 장애물이 없으면 이동
+        if(hit.transform == null)
+        {
+            // MoveTo() 매소드에 이동 방향을 매개변수로 전달해 이동
+            movement2D.MoveTo(moveDirection);
+            // 화면 밖으로 나가게 되면 반대편에서 등장
+            aroundWrap.UpdateAroundWrap();
+        }
+        else
+        {
+            SetMoveDirectionByRandom();
+        }
+
     }
 
    private void SetMoveDirectionByRandom()
