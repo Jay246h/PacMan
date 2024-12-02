@@ -1,23 +1,33 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class EnemyFSM : MonoBehaviour
 {
     [SerializeField]
     private LayerMask tileLayer;
+    [SerializeField]
+    private Sprite[] sprites;
+    [SerializeField]
+    private StageData stageData;
+    [SerializeField]
+    private float delayTime = 3f;
 
     private Vector2 moveDirection = Vector2.right;
     private Direction direction = Direction.Right;
+    private Direction nextDirection = Direction.None;
     private float rayDistance = 0.55f;
 
     private Movement2D movement2D;
     private AroundWrap aroundWrap;
+    private SpriteRenderer spriteRenderer;
 
     private void Awake()
     {
         movement2D = GetComponent<Movement2D>();
         aroundWrap = GetComponent<AroundWrap>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
 
         // 이동방향을 임의로 설정
         SetMoveDirectionByRandom();
@@ -42,12 +52,101 @@ public class EnemyFSM : MonoBehaviour
 
     }
 
+    private void SetMoveDirection(Direction direction)
+    {
+        // 이동 방향 설정
+        this.direction = direction;
+        // Vector3 타입의 이동 방향 값 설정
+        moveDirection = Vector3FromEnum(this.direction);
+        // 이동 방향에 맞춰 이미지 변경
+        spriteRenderer.sprite = sprites[(int)this.direction];
+        // 모든 코루틴 중지
+        StopAllCoroutines();
+        // 일정 시간동안 같은 방향으로 이동할 경우 방향을 바꾸도록 한다
+        StartCoroutine(nameof(SetMoveDirectionByTime));
+    }
+
    private void SetMoveDirectionByRandom()
     {
         // 이동 방향을 임의로 설정해서 SetMoveDirection() 매소드 호출
         direction = (Direction)Random.Range(0, (int)Direction.Count);
-        // Vector3 타입의 이동 방향 값 설정
-        moveDirection = Vector3FromEnum(direction);
+        SetMoveDirection(direction);
+    }
+
+    private IEnumerator SetMoveDirectionByTime()
+    {
+        yield return new WaitForSeconds(delayTime);
+
+        // 현재 이동 방향이 Right(=0) or Left(=2)이면 direction%2의 같은 0으로
+        // 다음 이동 방향(nextDirection)은 Up(=1) or Down(=3)으로 설정
+        // 현재 이동 방향이 Up(=1) or Down(=3)이면 direction%2의 같은 1로
+        // 다음 이동 방향(nextDirection)은 Right(=0) or Left(=2)로 설정
+
+        nextDirection = (Direction)(Random.Range(0, 2) * 2 + 1 - (int)direction%2);
+
+        // 해당 방향으로 이동이 가능한지 체크한 후 실제 방향을 변경하는 코루틴 함수
+        StartCoroutine(nameof(CheckBlockedNextMoveDirection));
+    }
+
+    private IEnumerator CheckBlockedNextMoveDirection()
+    {
+        while (true)
+        {
+            Vector3[] directions = new Vector3[3];
+            bool[] isPossibleMoves = new bool[3];
+
+            directions[0] = Vector3FromEnum(nextDirection);
+            // nextDirection 이동 방향이 오른쪽 또는 왼쪽일 때
+            if (directions[0].x != 0)
+            {
+                directions[1] = directions[0] + new Vector3(0, 0.65f, 0);
+                directions[2] = directions[0] + new Vector3(0, -0.65f, 0);
+            }
+            // nextDirection 이동 방향이 위 또는 아래일 때
+            if (directions[0].y != 0)
+            {
+                directions[1] = directions[0] + new Vector3(-0.65f, 0, 0);
+                directions[2] = directions[0] + new Vector3(0.65f, 0, 0);
+            }
+
+            // nextDirection 이동 방향으로 이동이 가능한지 판별하기 위해 3가지 광선 발사
+            int possibleCount = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                if (i == 0)
+                {
+                    isPossibleMoves[i] = Physics2D.Raycast(transform.position, directions[i], 0.5f, tileLayer);
+                    Debug.DrawLine(transform.position, transform.position + directions[i] * 0.5f, Color.yellow);
+                }
+                else
+                {
+                    isPossibleMoves[i] = Physics2D.Raycast(transform.position, directions[i], 0.7f, tileLayer);
+                    Debug.DrawLine(transform.position, transform.position + directions[i] * 0.7f, Color.yellow);
+                }
+
+                if (isPossibleMoves[i] == false)
+                {
+                    possibleCount++;
+                }
+            }
+
+            // 3개의 광선에 부딪히는 오브젝트가 없을 때 (이동 방향에 장애물이 없다는 것)
+            if ( possibleCount == 3)
+            {
+                // 외각으로 나갔을 때 이동하면 안되기 때문에 스테이지 범위 내에 있는지 검사
+                if (transform.position.x > stageData.LimitMin.x && transform.position.x < stageData.LimitMax.x &&
+                    transform.position.y > stageData.LimitMin.y && transform.position.y < stageData.LimitMax.y)
+                {
+                    // 이동 방향을 nextDirection으로 변경
+                    SetMoveDirection(nextDirection);
+                    // nextDirection은 None으로 설정
+                    nextDirection = Direction.None;
+                    // while() 반복문은 중지
+                    break;
+                }
+            }
+            yield return null;
+        }
     }
 
     private Vector3 Vector3FromEnum(Direction state)
